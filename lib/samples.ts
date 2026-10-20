@@ -16,7 +16,7 @@ export async function loadSamples(): Promise<Sample[]> {
   "use cache";
   const root = process.cwd();
   const yaml = await readFile(path.join(root, "data/samples.yaml"), "utf8");
-  const fasta = await readFile(path.join(root, "public/sequences.fasta"), "utf8");
+  const fasta = await readFile(path.join(root, "data/sequences.fasta"), "utf8");
 
   const meta = parse(yaml) as { id: string; name: string; virus: string; date: string | Date }[];
   const sequences = parseFasta(fasta);

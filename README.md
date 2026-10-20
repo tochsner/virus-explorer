@@ -1,6 +1,6 @@
 # 🦠 Virus-Explorer
 
-A small teaching dashboard for learning phylogenetics, based on a hypothetical virus outbreak at a school. Each child's sample is a sequence in `public/sequences.fasta`; names and sampling dates live in `data/samples.yaml`.
+A small teaching dashboard for learning phylogenetics, based on a hypothetical virus outbreak at a school. Each child's sample is a sequence in `data/sequences.fasta`; names and sampling dates live in `data/samples.yaml`.
 
 ## 🧰 Stack
 
