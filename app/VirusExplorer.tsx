@@ -3,10 +3,13 @@
 import { useState } from "react";
 import type { Sample } from "@/lib/samples";
 import { buildUpgmaTree, type TreeNode } from "@/lib/upgma";
+import Header from "./Header";
 import Tree from "./Tree";
 
-
-const SEQUENCE_PREVIEW_LENGTH = 1000;
+const SEQUENCE_PREVIEW_LENGTH = 400;
+const TREE_DELAY_RANGE_S = { min: 2, max: 5 };
+const ORANGE_STYLE = { background: "#f59e0b", color: "#3b2300" };
+const BOX_CLASS = "rounded-lg bg-[#f6f7f8] p-4 shadow-[0_1px_4px_rgba(0,0,0,0.06)]";
 
 type Tab = "blast" | "tree";
 type BlastResult = { status: "running" | "done" | "error"; text: string };
@@ -20,16 +23,9 @@ export default function VirusExplorer({ samples }: { samples: Sample[] }) {
   }
 
   return (
-    <main className="mx-auto max-w-5xl p-6">
-      <h1 className="mb-6 text-3xl font-bold">Virus-Explorer</h1>
-      <nav className="mb-6 flex gap-2">
-        <TabButton active={tab === "blast"} onClick={() => setTab("blast")}>
-          BLAST
-        </TabButton>
-        <TabButton active={tab === "tree"} onClick={() => setTab("tree")}>
-          Phylogenetischer Baum
-        </TabButton>
-      </nav>
+    <>
+      <Header tab={tab} onTabChange={setTab} />
+      <main className="mx-auto max-w-5xl p-6">
       {/* both tabs stay mounted so their state survives switching */}
       <div hidden={tab !== "blast"}>
         <BlastTab samples={samples} results={results} setResult={setResult} />
@@ -37,18 +33,8 @@ export default function VirusExplorer({ samples }: { samples: Sample[] }) {
       <div hidden={tab !== "tree"}>
         <TreeTab samples={samples} results={results} />
       </div>
-    </main>
-  );
-}
-
-function TabButton(props: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={props.onClick}
-      style={{ borderWidth: props.active ? "2px" : "1px", fontWeight: props.active ? 700 : 400 }}
-    >
-      {props.children}
-    </button>
+      </main>
+    </>
   );
 }
 
@@ -63,12 +49,13 @@ function BlastTab(props: {
     <section>
       <ul className="flex flex-col gap-3">
         {samples.map((s) => (
-          <li key={s.id} className="border border-black p-4">
-            <SampleDetails sample={s} />
-            <button className="mt-2" onClick={() => blastSample(s, setResult)}>
-              BLAST
-            </button>
-            {results[s.id] && <div className="mt-2">{describeResult(results[s.id])}</div>}
+          <li key={s.id} className={BOX_CLASS}>
+            <SampleDetails
+              sample={s}
+              action={
+                <BlastButton result={results[s.id]} onClick={() => blastSample(s, setResult)} />
+              }
+            />
           </li>
         ))}
       </ul>
@@ -76,22 +63,86 @@ function BlastTab(props: {
   );
 }
 
-/** Shows name, date, length and a sequence preview of a sample. */
-function SampleDetails({ sample }: { sample: Sample }) {
+/** Shows name, an optional action at the top right, pills for date, length, nucleic acid type and BLAST result, and a sequence preview. */
+function SampleDetails(props: { sample: Sample; result?: BlastResult; action?: React.ReactNode }) {
+  const { sample, result, action } = props;
   return (
     <>
-      <div className="font-bold">
-        {sample.name} · {sample.date}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <div className="text-lg font-bold">{sample.name}</div>
+          <div className="flex flex-wrap gap-1.5">
+            <Pill kind="date">{sample.date}</Pill>
+            <Pill kind="length">{sample.sequence.length} Basen</Pill>
+            <Pill kind="type">{detectNucleicAcid(sample.sequence)}</Pill>
+            {result && <Pill kind="virus">{describeResult(result)}</Pill>}
+          </div>
+        </div>
+        {action}
       </div>
-      <div>{sample.sequence.length} Basen</div>
-      <div
-        className="mt-2 line-clamp-4 break-all text-sm"
-        style={{ fontFamily: "var(--font-sequence), monospace" }}
-      >
+      <div className="mt-3 line-clamp-2 break-all text-base">
         <ColoredSequence sequence={sample.sequence.slice(0, SEQUENCE_PREVIEW_LENGTH)} />
       </div>
     </>
   );
+}
+
+const PILL_COLORS = {
+  date: { background: "#dbeafe", color: "#1e3a8a" },
+  length: { background: "#fde7c7", color: "#7a4b00" },
+  type: { background: "#d5f0e6", color: "#00573f" },
+  virus: { background: "#f6dcea", color: "#7a2a55" },
+};
+
+/** Orange pill button that shows a spinner while running and the virus once the result is in. */
+function BlastButton(props: { result?: BlastResult; onClick: () => void }) {
+  const status = props.result?.status;
+  const running = status === "running";
+  const done = status === "done";
+  const label = done ? props.result!.text : status === "error" ? "Fehler – erneut versuchen" : "BLAST";
+
+  return (
+    <button
+      onClick={props.onClick}
+      disabled={running || done}
+      title={status === "error" ? props.result!.text : undefined}
+      className={`inline-flex items-center rounded-full border-0 px-5 py-2 text-lg font-semibold transition-colors duration-300 enabled:hover:brightness-95 disabled:cursor-default ${running ? "pulse-soft" : ""}`}
+      style={done ? { background: "#fde7c7", color: "#7a4b00" } : ORANGE_STYLE}
+    >
+      <ButtonSpinner visible={running} />
+      <span key={label} className="fade-in">
+        {label}
+      </span>
+    </button>
+  );
+}
+
+/** Spinner that grows in from the left of a button label while visible. */
+function ButtonSpinner({ visible }: { visible: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className="inline-flex shrink-0 items-center justify-center overflow-hidden transition-all duration-300"
+      style={{ width: visible ? 20 : 0, marginRight: visible ? 6 : 0, opacity: visible ? 1 : 0 }}
+    >
+      <span className="block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent" />
+    </span>
+  );
+}
+
+function Pill(props: { kind: keyof typeof PILL_COLORS; children: React.ReactNode }) {
+  return (
+    <span
+      className="rounded-full px-3 py-1 text-sm"
+      style={PILL_COLORS[props.kind]}
+    >
+      {props.children}
+    </span>
+  );
+}
+
+function detectNucleicAcid(sequence: string): "RNA" | "DNA" {
+  return sequence.includes("U") ? "RNA" : "DNA";
 }
 
 const BASE_COLORS: Record<string, string> = {
@@ -102,14 +153,18 @@ const BASE_COLORS: Record<string, string> = {
 };
 const OTHER_BASE_COLOR = "#888";
 
-/** Renders a sequence with one color per nucleotide, grouping runs of equal bases into one span. */
+/** Renders a sequence with one color per nucleotide; hovering a base highlights it without moving the text. */
 function ColoredSequence({ sequence }: { sequence: string }) {
-  const runs = sequence.match(/(.)\1*/g) ?? [];
   return (
     <>
-      {runs.map((run, i) => (
-        <span key={i} style={{ color: BASE_COLORS[run[0]] ?? OTHER_BASE_COLOR }}>
-          {run}
+      {Array.from(sequence, (base, i) => (
+        <span
+          key={i}
+          title={`Position ${i + 1}`}
+          className="hover:bg-black/15"
+          style={{ color: BASE_COLORS[base] ?? OTHER_BASE_COLOR }}
+        >
+          {base}
         </span>
       ))}
     </>
@@ -141,10 +196,15 @@ async function blastSample(sample: Sample, setResult: SetResult) {
 function TreeTab(props: { samples: Sample[]; results: Record<string, BlastResult> }) {
   const { samples, results } = props;
   const [tree, setTree] = useState<TreeNode | null>(null);
+  const [computing, setComputing] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = samples.find((smp) => smp.id === selectedId);
 
-  function computeTree() {
+  async function computeTree() {
+    setComputing(true);
+    const delay = TREE_DELAY_RANGE_S.min + Math.random() * (TREE_DELAY_RANGE_S.max - TREE_DELAY_RANGE_S.min);
+    await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+
     setTree(
       buildUpgmaTree(
         samples.map((s) => ({
@@ -160,9 +220,17 @@ function TreeTab(props: { samples: Sample[]; results: Record<string, BlastResult
   return (
     <section>
       {!tree && (
-        <button className="mb-4" onClick={computeTree}>
-          Baum berechnen
-        </button>
+        <div className="mb-4 flex justify-center">
+          <button
+            className={`inline-flex items-center rounded-full border-0 px-5 py-2 text-lg font-semibold transition-[filter] enabled:hover:brightness-95 disabled:cursor-progress ${computing ? "pulse-soft" : ""}`}
+            style={ORANGE_STYLE}
+            disabled={computing}
+            onClick={computeTree}
+          >
+            <ButtonSpinner visible={computing} />
+            Baum berechnen
+          </button>
+        </div>
       )}
       {tree && (
         <div className="flex flex-col gap-6">
@@ -176,11 +244,8 @@ function TreeTab(props: { samples: Sample[]; results: Record<string, BlastResult
             />
           </div>
           {selected && (
-            <aside className="border border-black p-4">
-              <SampleDetails sample={selected} />
-              {results[selected.id]?.status === "done" && (
-                <div className="mt-2">{describeResult(results[selected.id])}</div>
-              )}
+            <aside className={BOX_CLASS}>
+              <SampleDetails sample={selected} result={results[selected.id]} />
             </aside>
           )}
         </div>

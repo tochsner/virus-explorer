@@ -54,6 +54,16 @@ function computeJaccard(a: Set<string>, b: Set<string>): number {
   return union === 0 ? 0 : shared / union;
 }
 
+/**
+ * Estimates substitutions per site between two sequences that merge at the given node height.
+ * Uses the Mash distance derived from the k-mer Jaccard index.
+ */
+export function estimateDivergence(height: number): number {
+  if (height <= 0) return 0;
+  const jaccard = Math.max(1 - 2 * height, 1e-9);
+  return -Math.log((2 * jaccard) / (1 + jaccard)) / KMER_SIZE;
+}
+
 /** Cuts the tree at a node height, returning the separate subtrees below the cut. */
 export function splitAtHeight(node: TreeNode, maxHeight: number): TreeNode[] {
   return node.height <= maxHeight

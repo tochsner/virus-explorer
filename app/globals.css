@@ -5,8 +5,66 @@ body {
   color: #000;
 }
 
-button {
-  border: 1px solid #000;
-  padding: 0.4rem 1rem;
-  cursor: pointer;
+@layer base {
+  button {
+    border: 1px solid #000;
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 4px -3px;
+  }
+}
+
+.virus-blob {
+  animation: float 12s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .virus-blob {
+    animation: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    background-color: #f59e0b;
+  }
+  50% {
+    background-color: #f8b84a;
+  }
+}
+
+.pulse-soft {
+  animation: pulse-soft 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in,
+  .pulse-soft {
+    animation: none;
+  }
 }
