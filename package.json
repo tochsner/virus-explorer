@@ -1,5 +1,5 @@
 {
-  "name": "my-app",
+  "name": "outbreak-analysis",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,7 +11,8 @@
   "dependencies": {
     "next": "16.4.2",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
