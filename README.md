@@ -1,36 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🦠 Virus-Explorer
 
-## Getting Started
+A small teaching dashboard for learning phylogenetics, based on a hypothetical virus outbreak at a school. Each child's sample is a sequence in `public/sequences.fasta`; names and sampling dates live in `data/samples.yaml`.
 
-First, run the development server:
+## 🧰 Stack
+
+- ⚡ Next.js 16 (App Router) with React 19 and the React Compiler
+- 🎨 Tailwind CSS 4 and Rubik via `next/font`
+- 🟦 TypeScript
+- 📄 `yaml` for the sample metadata
+
+## ✨ Features
+
+- 🔬 **BLAST tab:** one box per sample with name, date, length, DNA/RNA, and a colored sequence preview. A BLAST button identifies the virus (simulated with a 2-10 s delay, the answers come from `data/samples.yaml`).
+- 🌳 **Phylogenetic tree tab:** UPGMA on k-mer distances, drawn on a calendar axis with tips at their sampling dates.
+  - 🔵 Colored subtrees, split at a distance threshold so different viruses don't share a root
+  - 💬 Tooltips for tips, transmissions (who likely infected whom) and branches (expected mutations)
+  - 👆 Click a tip to see its sequence details
+
+## 🚀 Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Then open [http://localhost:3000](http://localhost:3000).
