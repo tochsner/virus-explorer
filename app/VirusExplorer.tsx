@@ -220,7 +220,7 @@ function TreeTab(props: { samples: Sample[]; results: Record<string, BlastResult
   return (
     <section>
       {!tree && (
-        <div className="mb-4 flex justify-center">
+        <div className="mb-4 mt-12 flex justify-center">
           <button
             className={`inline-flex items-center rounded-full border-0 px-5 py-2 text-lg font-semibold transition-[filter] enabled:hover:brightness-95 disabled:cursor-progress ${computing ? "pulse-soft" : ""}`}
             style={ORANGE_STYLE}

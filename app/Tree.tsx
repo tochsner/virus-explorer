@@ -118,7 +118,7 @@ export default function Tree(props: {
                 y={axisY + 34}
                 fill={AXIS_COLOR}
                 stroke="none"
-                fontSize={20}
+                fontSize={18}
                 textAnchor="middle"
               >
                 {formatTick(t)}
@@ -295,9 +295,9 @@ function renderNodes(p: Placed, context: RenderContext): React.ReactNode {
           style={{ cursor: "pointer" }}
           {...hover}
         />
-        <text x={x + 16} y={p.y - 2} fill="#000" stroke="none" fontSize={20}>
+        <text x={x + 16} y={p.y - 2} fill="#000" stroke="none" fontSize={18}>
           <tspan fontWeight={700}>{context.getSample(id)?.name}</tspan>
-          <tspan x={x + 16} dy={22} fontSize={17} fill="#555">
+          <tspan x={x + 16} dy={20} fontSize={15} fill="#555">
             Probe vom {context.getSample(id)?.date}
           </tspan>
         </text>
