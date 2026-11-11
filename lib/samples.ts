@@ -11,7 +11,7 @@ export type Sample = {
   sequence: string;
 };
 
-/** Loads the hardcoded sample metadata and joins it with the FASTA sequences by id. */
+/** Loads the hardcoded sample metadata and joins it with the FASTA sequences by order. */
 export async function loadSamples(): Promise<Sample[]> {
   "use cache";
   const root = process.cwd();
@@ -21,13 +21,13 @@ export async function loadSamples(): Promise<Sample[]> {
   const meta = parse(yaml) as { id: string; name: string; virus: string; date: string | Date }[];
   const sequences = parseFasta(fasta);
 
-  return meta.map((m) => ({
+  return meta.map((m, index) => ({
     id: m.id,
     name: m.name,
     virus: m.virus,
     date: formatDate(m.date),
     isoDate: toIsoDate(m.date),
-    sequence: sequences.get(m.id) ?? "",
+    sequence: sequences[index] ?? "",
   }));
 }
 
@@ -41,15 +41,14 @@ function formatDate(date: string | Date): string {
   return `${day}.${month}.${year}`;
 }
 
-function parseFasta(text: string): Map<string, string> {
-  const result = new Map<string, string>();
-  let id: string | null = null;
+/** Returns the sequences of a FASTA file in file order, ignoring the headers. */
+function parseFasta(text: string): string[] {
+  const result: string[] = [];
   for (const line of text.split(/\r?\n/)) {
     if (line.startsWith(">")) {
-      id = line.slice(1).trim().split(/\s+/)[0];
-      result.set(id, "");
-    } else if (id) {
-      result.set(id, result.get(id) + line.trim().toUpperCase());
+      result.push("");
+    } else if (result.length > 0) {
+      result[result.length - 1] += line.trim().toUpperCase();
     }
   }
   return result;

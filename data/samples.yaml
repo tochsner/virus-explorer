@@ -1,20 +1,28 @@
-- id: OZ567821.1
-  virus: SARS-CoV-2
-  name: David
-  date: 2026-11-01
+- id: hRSV/A/England/397/2017
+  virus: RSV-A
+  name: Rosa
+  date: 2026-11-12
 - id: QB045812.1
   virus: SARS-CoV-2
   name: Emma
   date: 2026-11-04
-- id: PP_006TUFH.1
-  virus: RSV-B
-  name: Anna
-  date: 2026-11-07
-- id: PP_006X38E.1
-  virus: RSV-B
-  name: Ben
-  date: 2026-11-09
-- id: PP_006Q6AM.1
-  virus: RSV-B
-  name: Clara
-  date: 2026-11-12
+- id: OZ567821.1
+  virus: SARS-CoV-2
+  name: David
+  date: 2026-11-01
+- id: OZ576036.1
+  virus: SARS-CoV-2
+  name: Felix
+  date: 2026-11-02
+- id: EPI_ISL_1563628
+  virus: Influenza A
+  name: Greta
+  date: 2026-11-03
+- id: EPI_ISL_20291889
+  virus: Influenza A
+  name: Ida
+  date: 2026-11-06
+- id: EPI_ISL_19816750
+  virus: Influenza A
+  name: Hugo
+  date: 2026-11-05

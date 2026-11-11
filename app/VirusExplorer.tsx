@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Sample } from "@/lib/samples";
 import { buildUpgmaTree, type TreeNode } from "@/lib/upgma";
 import Header from "./Header";
 import Tree from "./Tree";
 
-const SEQUENCE_PREVIEW_LENGTH = 400;
 const TREE_DELAY_RANGE_S = { min: 2, max: 5 };
 const ORANGE_STYLE = { background: "#f59e0b", color: "#3b2300" };
 const BOX_CLASS = "rounded-lg bg-[#f6f7f8] p-4 shadow-[0_1px_4px_rgba(0,0,0,0.06)]";
@@ -16,11 +15,7 @@ type BlastResult = { status: "running" | "done" | "error"; text: string };
 
 export default function VirusExplorer({ samples }: { samples: Sample[] }) {
   const [tab, setTab] = useState<Tab>("blast");
-  const [results, setResults] = useState<Record<string, BlastResult>>({});
-
-  function setResult(id: string, result: BlastResult) {
-    setResults((prev) => ({ ...prev, [id]: result }));
-  }
+  const [results] = useState<Record<string, BlastResult>>({});
 
   return (
     <>
@@ -28,7 +23,7 @@ export default function VirusExplorer({ samples }: { samples: Sample[] }) {
       <main className="mx-auto max-w-5xl p-6">
       {/* both tabs stay mounted so their state survives switching */}
       <div hidden={tab !== "blast"}>
-        <BlastTab samples={samples} results={results} setResult={setResult} />
+        <BlastTab samples={samples} results={results} />
       </div>
       <div hidden={tab !== "tree"}>
         <TreeTab samples={samples} results={results} />
@@ -41,20 +36,39 @@ export default function VirusExplorer({ samples }: { samples: Sample[] }) {
 function BlastTab(props: {
   samples: Sample[];
   results: Record<string, BlastResult>;
-  setResult: SetResult;
 }) {
-  const { samples, results, setResult } = props;
+  const { samples, results } = props;
+  const highlightStyle = useRef<HTMLStyleElement>(null);
+  const highlightedPosition = useRef<string | undefined>(undefined);
+
+  // the highlight is a single generated css rule rather than react state, so hovering does not re-render every base
+  function highlightPosition(position: string | undefined) {
+    if (position === highlightedPosition.current || !highlightStyle.current) return;
+    highlightedPosition.current = position;
+    highlightStyle.current.textContent = position
+      ? `.sequence-base[data-position="${position}"] { background: var(--base-color); box-shadow: 0 0 0 1px var(--base-color); color: #fff !important; }`
+      : "";
+  }
 
   return (
     <section>
-      <ul className="flex flex-col gap-3">
+      <style ref={highlightStyle} />
+      <ul
+        className="flex flex-col gap-3"
+        onMouseOver={(e) => {
+          const position = (e.target as HTMLElement).dataset?.position;
+          if (position !== undefined || (e.target as HTMLElement).closest(".sequence-box")) {
+            highlightPosition(position && /^\d+$/.test(position) ? position : undefined);
+          }
+        }}
+        onMouseLeave={() => highlightPosition(undefined)}
+      >
         {samples.map((s) => (
           <li key={s.id} className={BOX_CLASS}>
             <SampleDetails
               sample={s}
-              action={
-                <BlastButton result={results[s.id]} onClick={() => blastSample(s, setResult)} />
-              }
+              result={results[s.id]}
+              action={<CopyButton sequence={s.sequence} />}
             />
           </li>
         ))}
@@ -63,7 +77,7 @@ function BlastTab(props: {
   );
 }
 
-/** Shows name, an optional action at the top right, pills for date, length, nucleic acid type and BLAST result, and a sequence preview. */
+/** Shows name, an optional action at the top right, pills for date, length, nucleic acid type and BLAST result, and the scrollable full sequence. */
 function SampleDetails(props: { sample: Sample; result?: BlastResult; action?: React.ReactNode }) {
   const { sample, result, action } = props;
   return (
@@ -80,8 +94,8 @@ function SampleDetails(props: { sample: Sample; result?: BlastResult; action?: R
         </div>
         {action}
       </div>
-      <div className="mt-3 line-clamp-2 break-all text-base">
-        <ColoredSequence sequence={sample.sequence.slice(0, SEQUENCE_PREVIEW_LENGTH)} />
+      <div className="sequence-box mt-3 h-[4.5rem] cursor-crosshair font-mono overflow-y-auto break-all text-base leading-6">
+        <ColoredSequence sequence={sample.sequence} />
       </div>
     </>
   );
@@ -94,25 +108,30 @@ const PILL_COLORS = {
   virus: { background: "#f6dcea", color: "#7a2a55" },
 };
 
-/** Orange pill button that shows a spinner while running and the virus once the result is in. */
-function BlastButton(props: { result?: BlastResult; onClick: () => void }) {
-  const status = props.result?.status;
-  const running = status === "running";
-  const done = status === "done";
-  const label = done ? props.result!.text : status === "error" ? "Fehler – erneut versuchen" : "BLAST";
-
+/** Icon button that copies the full sequence to the clipboard. */
+function CopyButton({ sequence }: { sequence: string }) {
   return (
     <button
-      onClick={props.onClick}
-      disabled={running || done}
-      title={status === "error" ? props.result!.text : undefined}
-      className={`inline-flex items-center rounded-full border-0 px-5 py-2 text-lg font-semibold transition-colors duration-300 enabled:hover:brightness-95 disabled:cursor-default ${running ? "pulse-soft" : ""}`}
-      style={done ? { background: "#fde7c7", color: "#7a4b00" } : ORANGE_STYLE}
+      onClick={() => navigator.clipboard.writeText(sequence)}
+      title="Sequenz kopieren"
+      aria-label="Sequenz kopieren"
+      className="inline-flex items-center rounded-full border-0 p-2 transition-colors duration-300 hover:brightness-95"
+      style={ORANGE_STYLE}
     >
-      <ButtonSpinner visible={running} />
-      <span key={label} className="fade-in">
-        {label}
-      </span>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+        className="size-6"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184"
+        />
+      </svg>
     </button>
   );
 }
@@ -153,6 +172,10 @@ const BASE_COLORS: Record<string, string> = {
 };
 const OTHER_BASE_COLOR = "#888";
 
+function baseColor(base: string): string {
+  return BASE_COLORS[base] ?? OTHER_BASE_COLOR;
+}
+
 /** Renders a sequence with one color per nucleotide; hovering a base highlights it without moving the text. */
 function ColoredSequence({ sequence }: { sequence: string }) {
   return (
@@ -160,9 +183,10 @@ function ColoredSequence({ sequence }: { sequence: string }) {
       {Array.from(sequence, (base, i) => (
         <span
           key={i}
+          data-position={i + 1}
           title={`Position ${i + 1}`}
-          className="hover:bg-black/15"
-          style={{ color: BASE_COLORS[base] ?? OTHER_BASE_COLOR }}
+          className="sequence-base rounded-[2px]"
+          style={{ color: baseColor(base), "--base-color": baseColor(base) } as React.CSSProperties}
         >
           {base}
         </span>
@@ -174,23 +198,6 @@ function ColoredSequence({ sequence }: { sequence: string }) {
 function describeResult(result: BlastResult): string {
   if (result.status === "running") return "läuft…";
   return result.status === "done" ? `Virus: ${result.text}` : result.text;
-}
-
-type SetResult = (id: string, result: BlastResult) => void;
-
-async function blastSample(sample: Sample, setResult: SetResult) {
-  setResult(sample.id, { status: "running", text: "" });
-  try {
-    const response = await fetch("/api/blast", {
-      method: "POST",
-      body: JSON.stringify({ id: sample.id }),
-    });
-    const { result, error } = await response.json();
-    if (error) throw new Error(error);
-    setResult(sample.id, { status: "done", text: result });
-  } catch (e) {
-    setResult(sample.id, { status: "error", text: `Fehler: ${(e as Error).message}` });
-  }
 }
 
 function TreeTab(props: { samples: Sample[]; results: Record<string, BlastResult> }) {
